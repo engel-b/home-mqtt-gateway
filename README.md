@@ -100,4 +100,3 @@ or by env-file:
 ```bash
 docker run -d --env-file envfile.env engelb/homemqttgateway:latest
 ```
-
