@@ -1,0 +1,5 @@
+asyncio
+paho-mqtt
+requests
+ecowater-softener
+myPyllant
