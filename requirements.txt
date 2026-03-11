@@ -1,4 +1,3 @@
-asyncio
 paho-mqtt
 requests
 ecowater-softener
