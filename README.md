@@ -55,8 +55,8 @@ MYVAILLANT_USER=<username, required>
 MYVAILLANT_PASS=<password, required>
 MYVAILLANT_BRAND=<brand the account is registered in; default is "vaillant">
 MYVAILLANT_COUNTRY=<country the account is registered in; default is "germany">
-VAILLANT_TOPIC=<MQTT-topic, where the data needs to be pushed to; default is "test/vaillant">
-VAILLANT_POLL_INTERVALL=<time in seconds between update; default is 600>
+MYVAILLANT_TOPIC=<MQTT-topic, where the data needs to be pushed to; default is "test/vaillant">
+MYVAILLANT_POLL_INTERVALL=<time in seconds between update; default is 600>
 ```
 
 

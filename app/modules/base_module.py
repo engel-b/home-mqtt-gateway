@@ -10,7 +10,7 @@ class BaseModule:
 
     def __init__(self, mqtt_client, poll_interval=30):
         self.mqtt = mqtt_client
-        self.poll_interval = poll_interval
+        self.poll_interval = int(poll_interval)
         self.last_values = {}
         self._stop_thread = False
 

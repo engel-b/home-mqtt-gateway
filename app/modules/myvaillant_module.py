@@ -6,7 +6,7 @@ from myPyllant.api import MyPyllantAPI
 from modules.base_module import BaseModule
 
 
-VAILLANT_POLL_INTERVALL = os.getenv('VAILLANT_POLL_INTERVALL', 600)
+MYVAILLANT_POLL_INTERVALL = os.getenv('MYVAILLANT_POLL_INTERVALL', 600)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("MyVaillantModule")
@@ -20,12 +20,12 @@ class MyVaillantModule(BaseModule):
     """MyVaillant-Integration: Nur lesen & pushen an MQTT."""
 
     def __init__(self, mqtt_client):
-        super().__init__(mqtt_client, VAILLANT_POLL_INTERVALL)
+        super().__init__(mqtt_client, MYVAILLANT_POLL_INTERVALL)
         self.user = os.getenv("MYVAILLANT_USER")
         self.passw = os.getenv("MYVAILLANT_PASS")
         self.brand = os.getenv("MYVAILLANT_BRAND", "vaillant")
         self.country = os.getenv("MYVAILLANT_COUNTRY", "germany")
-        self.topic = os.getenv('VAILLANT_TOPIC', 'test/vaillant')
+        self.topic = os.getenv('MYVAILLANT_TOPIC', 'test/vaillant')
         self.last_values = {}
 
 
@@ -42,7 +42,7 @@ class MyVaillantModule(BaseModule):
                     await self.publish_system(system)
             except aiohttp.client_exceptions.ClientResponseError as e:
                 if e.status == 403:
-                    logger.warning(f"Vaillant API Quota exceeded: {e}")
+                    logger.warning(f"Vaillant API Quota exceeded. Pause for 5 min.")
                     # eine kurze Pause einlegen
                     await asyncio.sleep(300)
                 else:
