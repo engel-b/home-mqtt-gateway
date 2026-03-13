@@ -18,6 +18,7 @@ class UponorModule(BaseModule):
         self.topic = os.getenv('UPONOR_TOPIC', 'test/uponor')
         self.url = f"http://{self.gateway}/JNAP/"
         self.room_map = {}
+        self.room_topic_map = self.createRoomTopicMap(os.getenv('UPONOR_ROOM_TOPIC_MAPPING',) or None)
         self.devices = {}  # key: room_name -> dict mit Werten
         # Keine Subscribes hier, erst nach erster Abfrage
 
@@ -33,6 +34,23 @@ class UponorModule(BaseModule):
     def celsius2fahrenheit(value):
         fahrenheit = (float(value) * 9 / 5) +32
         return round(fahrenheit, 1)
+
+
+    def createRoomTopicMap(self, roomTopicMappings):
+        return dict(item.split("=", 1) for item in roomTopicMappings.split(";"))
+
+
+    def room2topic(self, room):
+        return self.room_topic_map.get(room, room)
+
+
+    def topic2room(self, topic):
+        for k, v in self.room_topic_map.items():
+            if v == topic:
+                return  k
+
+        return topic
+
 
     def api_call(self, action, payload):
         headers = {
@@ -57,7 +75,7 @@ class UponorModule(BaseModule):
     # MQTT Rückrichtung: Soll-Werte setzen
     # -------------------------------
     def subscribe_topic_for_room(self, room):
-        topic = f"{self.topic}/{room}/setpoint/set"
+        topic = f"{self.topic}/{self.room2topic(room)}/setpoint/set"
         self.mqtt.subscribe(topic, lambda payload, r=room: self.set_setpoint(r, payload))
 
     def set_setpoint(self, room, payload):
@@ -145,7 +163,7 @@ class UponorModule(BaseModule):
             for attr, val in values.items():
                 if attr not in DEFAULT_ATTRS:
                     continue
-                key = f"{room}/{attr}"
+                key = f"{self.room2topic(room)}/{attr}"
                 if self.last_values.get(key) != val:
                     topic = f"{self.topic}/{key}"
                     self.mqtt.publish(topic, str(val))
