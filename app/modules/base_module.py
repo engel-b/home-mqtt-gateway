@@ -12,6 +12,7 @@ class BaseModule:
         self.mqtt = mqtt_client
         self.poll_interval = int(poll_interval)
         self.last_values = {}
+        self.lastCall = 0
         self._stop_thread = False
 
 
@@ -27,13 +28,15 @@ class BaseModule:
 
     def loop(self):
         while not self._stop_thread:
+            # push current state at least every 5 minutes
+            forceUpdate = time.time() - self.lastCall >= 300
             try:
-                self.fetch_and_publish()
+                self.fetch_and_publish(forceUpdate)
             except Exception:
                 logger.exception("Error in %s loop", self.__class__.__name__)
             time.sleep(self.poll_interval)
 
 
-    def fetch_and_publish(self):
+    def fetch_and_publish(self, forceUpdate):
         """Soll von Subklasse überschrieben werden"""
         raise NotImplementedError()

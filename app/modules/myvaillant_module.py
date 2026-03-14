@@ -29,17 +29,24 @@ class MyVaillantModule(BaseModule):
         self.last_values = {}
 
 
-    def fetch_and_publish(self):
+    def fetch_and_publish(self, forceUpdate):
         """Sync-Methode für BaseModule, kapselt async-Aufrufe in Eventloop."""
-        asyncio.run(self._async_fetch_and_publish())
+        asyncio.run(self._async_fetch_and_publish(forceUpdate))
 
 
-    async def _async_fetch_and_publish(self):
+    async def _async_fetch_and_publish(self, forceUpdate):
         """Holt Systeme aus der Cloud und pusht nur geänderte Werte."""
         async with MyPyllantAPI(self.user, self.passw, self.brand, self.country) as api:
             try:
-                async for system in api.get_systems():
-                    await self.publish_system(system)
+                async for system in api.get_systems(
+                include_connection_status=True,
+                include_diagnostic_trouble_codes=True,
+                include_rts=True,
+                include_mpc=True,
+                include_energy_management=True,
+                include_eebus=True
+            ):
+                    await self.publish_system(system, forceUpdate)
             except aiohttp.client_exceptions.ClientResponseError as e:
                 if e.status == 403:
                     logger.warning(f"Vaillant API Quota exceeded. Pause for 5 min.")
@@ -48,19 +55,8 @@ class MyVaillantModule(BaseModule):
                 else:
                     raise
 
-            # Optional: detailreichere Abfragen
-            async for system in api.get_systems(
-                include_connection_status=True,
-                include_diagnostic_trouble_codes=True,
-                include_rts=True,
-                include_mpc=True,
-                include_energy_management=True,
-                include_eebus=True
-            ):
-                await self.publish_system(system)
 
-
-    async def publish_system(self, system):
+    async def publish_system(self, system, forceUpdate):
         """Geht alle Attribute durch und publisht nur geänderte Werte."""
 
         system_id = getattr(system, "id", "system")
@@ -70,6 +66,6 @@ class MyVaillantModule(BaseModule):
             topic = f"{self.topic}/{system_id}/{key}"
             value_str = str(value)
 
-            if self.last_values.get(topic) != value_str:
+            if self.last_values.get(topic) != value_str or forceUpdate:
                 self.mqtt.publish(topic, value_str)
                 self.last_values[topic] = value_str

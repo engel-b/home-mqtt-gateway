@@ -143,7 +143,7 @@ class UponorModule(BaseModule):
     # -------------------------------
     # Polling + Publish
     # -------------------------------
-    def fetch_and_publish(self):
+    def fetch_and_publish(self, forceUpdate):
         data = self.get_attributes()
         if not data:
             return
@@ -164,7 +164,7 @@ class UponorModule(BaseModule):
                 if attr not in DEFAULT_ATTRS:
                     continue
                 key = f"{self.room2topic(room)}/{attr}"
-                if self.last_values.get(key) != val:
+                if self.last_values.get(key) != val or forceUpdate:
                     topic = f"{self.topic}/{key}"
                     self.mqtt.publish(topic, str(val))
                     self.last_values[key] = val

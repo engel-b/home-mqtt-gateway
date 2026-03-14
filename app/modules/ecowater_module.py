@@ -68,7 +68,7 @@ class EcowaterModule(BaseModule):
             raise
 
 
-    def fetch_and_publish(self):
+    def fetch_and_publish(self, forceUpdate):
         """Holt Systeme aus der Cloud und pusht nur geänderte Werte."""
         devices = self.ecowater_account.get_devices()
         if not devices:
@@ -94,7 +94,7 @@ class EcowaterModule(BaseModule):
 
             # nur Änderungen publishen
             for k, v in current_values.items():
-                if self.last_values.get(k) != v:
+                if self.last_values.get(k) != v or forceUpdate:
                     topic = f"{device_root_topic}/{k}"
                     self.mqtt.publish(topic, str(v))
                     self.last_values[k] = v
