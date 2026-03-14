@@ -37,7 +37,7 @@ class UponorModule(BaseModule):
 
 
     def createRoomTopicMap(self, roomTopicMappings):
-        return dict(item.split("=", 1) for item in roomTopicMappings.split(";"))
+        return dict(item.split("=", 1) for item in roomTopicMappings.split(";")) if roomTopicMappings is not None else {}
 
 
     def room2topic(self, room):
