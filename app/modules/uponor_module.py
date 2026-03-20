@@ -12,11 +12,20 @@ UPONOR_POLL_INTERVALL = os.getenv('UPONOR_POLL_INTERVALL', 60)
 DEFAULT_ATTRS = ["temperature", "humidity", "setpoint"]
 
 class UponorModule(BaseModule):
+    """Uponor-Integration: lesen & pushen an MQTT, MQTT lesen und pushen an Thermostat."""
+
+    required_config = ["UPONOR_GATEWAY"]
+    
     def __init__(self, mqtt_client):
         super().__init__(mqtt_client, UPONOR_POLL_INTERVALL)
-        self.gateway = os.getenv('UPONOR_GATEWAY')
+
+        if not self._enabled:
+            logger.info("%s disabled", self.__class__.__name__)
+            return
+        
+        gateways = os.getenv('UPONOR_GATEWAY')
+        self.gateways = [g.strip() for g in gateways.split(",") if g.strip()]
         self.topic = os.getenv('UPONOR_TOPIC', 'test/uponor')
-        self.url = f"http://{self.gateway}/JNAP/"
         self.room_map = {}
         self.room_topic_map = self.createRoomTopicMap(os.getenv('UPONOR_ROOM_TOPIC_MAPPING',) or None)
         self.devices = {}  # key: room_name -> dict mit Werten
@@ -52,24 +61,39 @@ class UponorModule(BaseModule):
         return topic
 
 
-    def api_call(self, action, payload):
+    def api_call(self, gateway, action, payload):
         headers = {
             "Content-Type": "application/json",
             "x-jnap-action": action
         }
+
+        url = f"http://{gateway}/JNAP/"
+
         try:
-            r = requests.post(self.url, headers=headers, json=payload, timeout=5)
+            r = requests.post(url, headers=headers, json=payload, timeout=5)
             if r.status_code != 200:
                 logger.warning("API call %s failed: %s", action, r.status_code)
                 return None
             return r.json()
         except requests.RequestException as e:
-            logger.warning("API call exception: %s", e)
+            logger.warning("API call exception on %s: %s", gateway, e)
             return None
 
-    def get_attributes(self):
-        return self.api_call("http://phyn.com/jnap/uponorsky/GetAttributes", {})
 
+    def get_attributes(self):
+        results = []
+
+        for gateway in self.gateways:
+            data = self.api_call(
+                gateway,
+                "http://phyn.com/jnap/uponorsky/GetAttributes",
+                {}
+            )
+            if data:
+                results.append(data)
+
+        return results
+    
 
     # -------------------------------
     # MQTT Rückrichtung: Soll-Werte setzen
@@ -144,22 +168,28 @@ class UponorModule(BaseModule):
     # Polling + Publish
     # -------------------------------
     def fetch_and_publish(self, forceUpdate):
-        data = self.get_attributes()
-        if not data:
+        all_data = self.get_attributes()
+        if not all_data:
             return
 
-        rooms = self.parse(data)
+        merged_rooms = {}
+
+        for data in all_data:
+            rooms = self.parse(data)
+
+            for room, values in rooms.items():
+                merged_rooms.setdefault(room, {}).update(values)
 
         # Neue Räume abonnieren
-        new_rooms = {r: v for r, v in rooms.items() if r not in self.devices}
+        new_rooms = {r: v for r, v in merged_rooms.items() if r not in self.devices}
         for room in new_rooms:
             self.subscribe_topic_for_room(room)
 
         # Geräte aktualisieren
-        self.devices.update(rooms)
+        self.devices.update(merged_rooms)
 
         # nur Änderungen publishen
-        for room, values in rooms.items():
+        for room, values in merged_rooms.items():
             for attr, val in values.items():
                 if attr not in DEFAULT_ATTRS:
                     continue

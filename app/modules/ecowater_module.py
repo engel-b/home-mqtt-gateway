@@ -41,10 +41,16 @@ DEFAULT_ATTRS = [
     ]
 
 class EcowaterModule(BaseModule):
-    """MyVaillant-Integration: Nur lesen & pushen an MQTT."""
+    """Ecowater-Integration: Nur lesen & pushen an MQTT."""
 
+    required_config = ["ECOWATER_EMAIL","ECOWATER_PASS"]
+    
     def __init__(self, mqtt_client):
         super().__init__(mqtt_client, ECOWATER_POLL_INTERVALL)
+
+        if not self._enabled:
+            logger.info("%s disabled", self.__class__.__name__)
+            return
 
         self.ecowater_serial = os.getenv('ECOWATER_SERIAL') or None
         self.ecowater_user = os.getenv('ECOWATER_EMAIL')
@@ -65,7 +71,6 @@ class EcowaterModule(BaseModule):
             return ecowater_account
         except Exception as e:
             logger.exception("Failed to initialize Ecowater account")
-            raise
 
 
     def fetch_and_publish(self, forceUpdate):

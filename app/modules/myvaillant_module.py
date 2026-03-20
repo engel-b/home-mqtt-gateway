@@ -19,8 +19,16 @@ DEFAULT_ATTRS = [
 class MyVaillantModule(BaseModule):
     """MyVaillant-Integration: Nur lesen & pushen an MQTT."""
 
+    required_config = ["MYVAILLANT_USER","MYVAILLANT_PASS"]
+    
+
     def __init__(self, mqtt_client):
         super().__init__(mqtt_client, MYVAILLANT_POLL_INTERVALL)
+
+        if not self._enabled:
+            logger.info("%s disabled", self.__class__.__name__)
+            return
+        
         self.user = os.getenv("MYVAILLANT_USER")
         self.passw = os.getenv("MYVAILLANT_PASS")
         self.brand = os.getenv("MYVAILLANT_BRAND", "vaillant")
