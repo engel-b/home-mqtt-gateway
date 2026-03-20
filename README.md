@@ -65,7 +65,7 @@ MYVAILLANT_POLL_INTERVALL=<time in seconds between update; default is 600>
 Get the device model (string)
 
 ```python
-UPONOR_GATEWAY=<hostname or IP of gateway, required>
+UPONOR_GATEWAY=<hostname or IP of gateway (optional: comma separated list), required>
 UPONOR_TOPIC=<MQTT-topic, where the data needs to be pushed to; default is "test/uponor/{roomname}">
 UPONOR_POLL_INTERVALL=<time in seconds between update; default is 60>
 UPONOR_ROOM_TOPIC_MAPPING=<roomname>=<topic>;<roomname>=<topic>;<roomname>=<topic> (optional, will become: UPONOR_TOPIC/<topic>)
